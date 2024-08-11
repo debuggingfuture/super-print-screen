@@ -2,7 +2,19 @@ import Image from "next/image";
 import { Button } from "@repo/ui/button";
 import styles from "./page.module.css";
 
+import { useState } from "react";
+
+import { prove, verify } from 'tlsn-js';
+
+
 export default function Home() {
+
+  const [query, setQuery] = useState("");
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(event.target.value);
+  };
+
   return (
     <div className={styles.page}>
       <main className={styles.main}>
@@ -16,10 +28,16 @@ export default function Home() {
         />
         <ol>
           <li>
-            Get started by editing <code>app/page.tsx</code>
+            Enter your query
           </li>
-          <li>Save and see your changes instantly.</li>
         </ol>
+        <input
+          type="text"
+          value={query}
+          onChange={handleInputChange}
+          className={styles.input}
+          placeholder="Type your query here"
+        />
 
         <div className={styles.ctas}>
           <a
