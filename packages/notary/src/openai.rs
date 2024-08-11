@@ -36,14 +36,6 @@ pub async fn create_thread() -> Result<(), Box<dyn std::error::Error>> {
     };
 
 
-    let list_messages_req = OpenAIThreadRequest {
-        messages: vec![Message {
-            role: "user".to_string(),
-            content: "Who is the current president of USA?".to_string(),
-        }]
-    };
-
-
     let response = client
         .post("https://api.openai.com/v1/threads")
         .header("Authorization", format!("Bearer {}", api_key))

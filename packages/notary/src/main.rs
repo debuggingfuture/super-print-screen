@@ -109,16 +109,16 @@ async fn main() {
     // Spawn the HTTP task to be run concurrently
     tokio::spawn(connection);
 
-    let message_id = "thread_JApUi9tQ7ucc22fyrA0lEK5z";
+    let thread_id = "thread_JApUi9tQ7ucc22fyrA0lEK5z";
 
-    let thread_id = "msg_thRMhxU4wgoOl2M2jJBsVx4V";
+    let message_id = "msg_thRMhxU4wgoOl2M2jJBsVx4V";
 
     println!("/v1/threads/{}/messages/{}", thread_id, message_id);
 
     // Build a simple HTTP request with common headers
     let request = Request::builder()
-        .uri(format!("https://api.openai.com/v1/threads/{}/messages", thread_id))
-        // .header("Host", SERVER_DOMAIN)
+        .uri(format!("/v1/threads/{}/messages", thread_id))
+        .header("Host", SERVER_DOMAIN)
         .header("Accept", "*/*")
         // Using "identity" instructs the Server not to use compression for its HTTP response.
         // TLSNotary tooling does not support compression.
@@ -126,8 +126,8 @@ async fn main() {
         .header("Connection", "close")
         .header("Authorization", format!("Bearer {}", api_key))
         .header("OpenAI-Beta","assistants=v2")
-        .header("OpenAI-Organization","org-gWqyehNS3iFul9AgQ27AkoXg")
-        // .header("User-Agent", USER_AGENT)
+        // .header("OpenAI-Organization","org-gWqyehNS3iFul9AgQ27AkoXg")
+        .header("User-Agent", USER_AGENT)
         .header("Content-Type", "application/json")
         .body(Empty::<Bytes>::new())
         .unwrap();
