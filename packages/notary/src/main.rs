@@ -9,10 +9,17 @@ use hyper::{body::Bytes, Request, StatusCode};
 use hyper_util::rt::TokioIo;
 use std::ops::Range;
 use tlsn_core::proof::TlsProof;
+use ethers::abi::Token;
 use tokio::io::AsyncWriteExt as _;
 use tokio_util::compat::{FuturesAsyncReadCompatExt, TokioAsyncReadCompatExt};
-
+use eas_sdk_rs::eas::AttestationDataBuilder;
 use tlsn_prover::tls::{state::Notarize, Prover, ProverConfig};
+
+use ethers::core::k256::ecdsa::SigningKey;
+use ethers::prelude::*;
+use ethers::utils::hex;
+
+use std::str::FromStr;
 
 // Setting of the application server
 const SERVER_DOMAIN: &str = "api.openai.com";
@@ -26,6 +33,38 @@ use tlsn_verifier::tls::{Verifier, VerifierConfig};
 
 
 use openai::{Message, OpenAIRequest};
+
+const BASE_SEPOLIA_CONTRACT_ADDRESS: &str = "0x4200000000000000000000000000000000000021";
+const BASE_SEPOLIA_ENDPOINT: &str = "https://sepolia.base.org/";
+
+
+pub async fn create_attestation(proof: String) -> Result<(), Box<dyn std::error::Error>> {
+    let private_key_hex = env::var("PRIVATE_KEY_HEX").expect("PRIVATE_KEY_HEX must be set");
+
+    let signing_key = SigningKey::from_slice(&hex::decode(private_key_hex)?)?;
+    let contract_address = H160::from_str(BASE_SEPOLIA_CONTRACT_ADDRESS)?;
+    let client = eas_sdk_rs::client::Client::new(BASE_SEPOLIA_ENDPOINT, contract_address, None, signing_key).await?;
+
+    let schema_uid = H256::from_str("0x937f07b2538a23865e59d6f2a9a109b0e2da3dad79c8b6702b80cb15ebd8a9a7")?;
+
+    // Make a new attestation for the created schema
+    let attestation_request = AttestationDataBuilder::new()
+        .revocable(true)
+        .data(&[
+            Token::String(proof)
+        ])
+        .build();
+
+    // attest sends a transaction and returns a PendingTx that can be awaited
+    let tx = client.eas.attest(&schema_uid, attestation_request).await?;
+    let attested = tx.await?;
+
+    println!("Attestation ID: {:?}", attested);
+
+    Ok(())
+
+}
+
 /// Runs a simple Notary with the provided connection to the Prover.
 pub async fn run_notary<T: AsyncWrite + AsyncRead + Send + Unpin + 'static>(conn: T) {
     // Load the notary signing key
@@ -126,7 +165,6 @@ async fn main() {
         .header("Connection", "close")
         .header("Authorization", format!("Bearer {}", api_key))
         .header("OpenAI-Beta","assistants=v2")
-        // .header("OpenAI-Organization","org-gWqyehNS3iFul9AgQ27AkoXg")
         .header("User-Agent", USER_AGENT)
         .header("Content-Type", "application/json")
         .body(Empty::<Bytes>::new())
@@ -138,16 +176,6 @@ async fn main() {
     let response = request_sender.send_request(request).await.unwrap();
 
     println!("Got a response from the server");
-
-    
-
-    println!("Response: {}", response.status());
-
-    // let mut body = response.into_body();
-    // while let Some(chunk) = body.data().await {
-    //     let chunk = chunk?;
-    //     println!("Body chunk: {:?}", std::str::from_utf8(&chunk).unwrap());
-    // }
 
     assert!(response.status() == StatusCode::OK);
 
@@ -165,14 +193,25 @@ async fn main() {
         build_proof_with_redactions(prover).await
     };
 
+    let proof_string = serde_json::to_string(&proof).unwrap();
+
     // Write the proof to a file
     let mut file = tokio::fs::File::create("simple_proof.json").await.unwrap();
-    file.write_all(serde_json::to_string_pretty(&proof).unwrap().as_bytes())
+    file.write_all(proof_string.clone().as_bytes())
         .await
         .unwrap();
 
     println!("Notarization completed successfully!");
     println!("The proof has been written to `simple_proof.json`");
+
+    // dont use the pretty one
+
+    // alternatively, upload proof ipfs
+
+    create_attestation(proof_string).await.unwrap();
+
+    println!("created attestation completed");
+
 }
 
 /// Find the ranges of the public and private parts of a sequence.

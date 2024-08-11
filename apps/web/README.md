@@ -1,36 +1,23 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/create-next-app).
+# Super Print Screen
 
-## Getting Started
+## Motivations
 
-First, run the development server:
+We often see controversies of reported biased response from LLM, search or other web services.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Typically, people will post a screen cap and circulate on social media. However, given the advance of deepfake technologies, integrity of such screenshot is often in doubt.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Given the personalized and private nature, it is hard to verify such response. 
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load Inter, a custom Google Font.
+## Solution
 
-## Learn More
+Consider we query chat GPT for "Who is the current president of USA"
+- With chat GPT API, we create a [Thread](https://platform.openai.com/docs/api-reference/threads/createThread) with the query 
+- We are able to retrieve the response via [messages](https://platform.openai.com/docs/api-reference/messages/listMessages) 
+- [TLSNotary](https://tlsnotary.org/) can be applied via API to generate zk proof of 
+    - It is possible to use a general purposed Notary to create a [portable proof](https://docs.tlsnotary.org/#tls-verification-with-a-general-purpose-notary) that can be verified
 
-To learn more about Next.js, take a look at the following resources:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+![alt text](image.png)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- We create an attestation on Base sepolia
